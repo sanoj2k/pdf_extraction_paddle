@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'fileapp',
+    'classify_text_llama2'
 ]
 
 MIDDLEWARE = [

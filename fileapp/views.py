@@ -47,6 +47,7 @@ def sanitize_text(text):
 
 # Function to classify text using Mistral
 def classify_text_with_openai(text):
+    print("Prompt:", text)
     try:
         prompt = f"""
         The following text is extracted from a document. Identify the category from the predefined categories: {', '.join(CATEGORIES)}.
@@ -99,7 +100,7 @@ def upload_and_classify_pdf(request):
 
     try:
         # poppler_path = r'C:\\MY SOTF\\poppler-24.08.0\\Library\\bin'
-        images = convert_from_path(save_path)[:3]
+        images = convert_from_path(save_path, poppler_path="/usr/bin/")[:3]
         extracted_text = ""
 
         for i, image in enumerate(images):

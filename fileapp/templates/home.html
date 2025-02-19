@@ -13,10 +13,23 @@
 
 <!-- Container for the upload form -->
 <div class="container mt-5" style="width: 500px;">
-    <h2 class="text-center mb-4">Upload PDF for Classification_Openai</h2>
+    <h2 class="text-center mb-4">Upload PDF for Classification using Openai</h2>
 
     <!-- Form for file upload and category selection -->
     <form id="uploadForm" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="methodSelect" class="form-label">Select Method</label>
+            <select id="methodSelect" class="form-select">
+                <option value="">Choose the method</option>
+                <!-- method will be populated here -->
+                <option value="Openai">Openai</option>
+                <option value="Mistral:latest">Mistral:latest</option>
+                <option value="Llama2">Llama2:latest</option>
+                <option value="Llama3">Llama3.2:latest</option>
+                
+                <option value="Other">Other</option>
+            </select>
+        </div>
         <div class="mb-3">
             <label for="categorySelect" class="form-label">Select Category</label>
             <select id="categorySelect" class="form-select">
@@ -56,6 +69,7 @@
     function uploadFile() {
         let fileInput = document.getElementById("fileInput");
         let categorySelect = document.getElementById("categorySelect");
+        let methodSelect = document.getElementById("methodSelect");
 
         // Check if file is selected
         if (!fileInput.files.length) {
@@ -72,6 +86,7 @@
         let formData = new FormData();
         formData.append("file", fileInput.files[0]);
         formData.append("selected_category", categorySelect.value);
+        formData.append("selected_method", methodSelect.value);
 
         fetch("{% url 'upload_and_classify_pdf' %}", {
             method: "POST",

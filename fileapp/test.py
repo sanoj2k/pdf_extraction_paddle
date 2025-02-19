@@ -58,7 +58,47 @@ def verify_mom(transcript, agenda, extracted_mom):
     if not transcript.strip() or not agenda.strip() or not extracted_mom.strip():
         return "Error: One or more input files are empty. Please provide valid data."
 
-    prompt = f"Given the following Meeting Transcript:\n{transcript}\nAnd the following Agenda:\n{agenda}\nVerify whether the following Extracted MOM is correct:\n{extracted_mom}\nHighlight any missing points or hallucinations."
+    prompt = f"""
+    You are an expert in document verification. Your task is to verify whether the given Extracted Minutes of Meeting (MOM) accurately reflect the Meeting Transcript and Agenda.
+
+    ### **Instructions:**
+    1. **Identify Hallucinations**: 
+    - A hallucination is any information present in the Extracted MOM **but not found in either the Transcript or Agenda**.
+    - List each hallucination separately with explanations.
+    
+    2. **Check Missing Points**:
+    - Any key discussion point from the Transcript or Agenda that is missing in the Extracted MOM should be listed.
+
+    3. **Accuracy Score**:
+    - Provide an **accuracy score (0-100%)** based on correctness, completeness, and the presence of hallucinations.
+    - If there are **many hallucinations or missing points**, the score should be lower.
+
+    ---
+
+    ### **Provided Data:**
+    #### 📌 **Meeting Transcript:**  
+    {transcript}
+
+    #### 📌 **Meeting Agenda:**  
+    {agenda}
+
+    #### 📌 **Extracted Minutes of Meeting (MOM) to be verified:**  
+    {extracted_mom}
+
+    ---
+
+    ### **Expected Response Format:**
+    **Hallucinations (if any)**:  
+    - [List each hallucination with a reason]  
+    - If no hallucinations, return: **NA**  
+
+    **Missing Points (if any)**:  
+    - [List missing discussions from the transcript/agenda]  
+    - If no missing points, return: **NA**  
+
+    **Accuracy Score**: **XX%**  
+    (Score between 0-100 based on the correctness and completeness of the Extracted MOM)  
+    """
 
     try:
         # Using OpenAI API with your preferred client approach
@@ -111,4 +151,3 @@ if __name__ == "__main__":
     verification_result = verify_mom(transcript, agenda, extracted_mom)
     print("Verification Result:\n", verification_result)
 
-prompt = f"Given the following Meeting Transcript:\n{transcript}\nAnd the following Agenda:\n{agenda}\nVerify whether the following Extracted MOM is correct:\n{extracted_mom}\nHighlight any missing points or hallucinations. check any invalid content in extracted for {agenda} if any invalid content in {extracted_mom} then display in the result."

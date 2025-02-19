@@ -12,9 +12,9 @@
 <body style="background-color: #948db996;">
 
 <!-- Container for the upload form -->
-<div class="container mt-5" style="width: 500px;">
+< class="container mt-5" style="width: 500px;">
     <h2 class="text-center mb-4">Upload PDF for Classification Llama</h2>
-
+    
     <!-- Form for file upload and category selection -->
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="mb-3">
@@ -73,7 +73,7 @@
         formData.append("file", fileInput.files[0]);
         formData.append("selected_category", categorySelect.value);
 
-        fetch("{% url 'upload_and_classify_pdf' %}", {
+        fetch("{% url 'upload_and_classify_pdf1' %}", {
             method: "POST",
             body: formData
         })

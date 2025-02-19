@@ -2,95 +2,41 @@ import os
 import re
 import logging
 import numpy as np
-import pandas as pd
 from django.conf import settings
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from pdf2image import convert_from_path
 from paddleocr import PaddleOCR
-import openai
 from dotenv import load_dotenv
-import os
+from .utils import classify_text_with_openai, classify_text_with_mistral_latest
 
+# Load environment variables
 load_dotenv()
-# from .models import UploadedFile  
-
 
 # Initialize PaddleOCR with German language
-ocr = PaddleOCR(lang='german')
+ocr = PaddleOCR(lang='german', use_angle_cls=True)  # Added angle classifier
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
-
-# Define categories
-CATEGORIES = [
-    "Aufenthaltstitel", "Aufteilungsplan", "Baubeschreibung", "Energieausweis",
-    "Exposé", "Flurkarte", "Grundbuchauszug", "Grundriss", "Kaufvertragsentwurf",
-    "Lohnsteuerbescheinigung", "Passport", "payslip", "Personalausweis",
-    "Teilungserklarung", "Wohnflachenberechnung"
-]
 
 # Function to remove invalid XML characters
 def sanitize_text(text):
     pattern = r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]'
     return re.sub(pattern, '', text)
 
-# Function to classify text using Mistral
-def classify_text_with_openai(text):
-    print("Prompt:", text)
-    try:
-        prompt = f"""
-        The following text is extracted from a document. Identify the category from the predefined categories: {', '.join(CATEGORIES)}.
-        If none of the categories apply, return 'NA'.
-        When responding, always standardize the category name to the exact form in the predefined categories list, e.g., return 'Teilungserklarung' instead of 'Teilungserklärung'.
-
-        Text: {text[:1000]}  # Limiting to first 1000 characters
-
-        Response format: Only return the category name, nothing else. If there is no exact match, return 'NA'.
-        """
-
-        chat_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a strict classifier and do not infer categories."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=10
-        )
-
-        logger.info(f"Full chat response: {chat_response}")
-
-        if hasattr(chat_response, 'choices') and len(chat_response.choices) > 0:
-            assistant_message = chat_response.choices[0].message
-            return assistant_message.content.strip() if assistant_message.content.strip() in CATEGORIES else "NA"
-        
-        return "NA"
-    
-    except Exception as e:
-        logger.error(f"Error in classification: {e}")
-        return "NA"
-
 # Function to process uploaded PDF file
-
 @csrf_exempt
 def upload_and_classify_pdf(request):
     if request.method != 'POST' or 'file' not in request.FILES:
         return JsonResponse({"error": "Invalid request or missing file"}, status=400)
 
+    selected_method = request.POST.get('selected_method', '').strip()
+    print('selected method is', selected_method)
     uploaded_file = request.FILES['file']
-    selected_category = request.POST.get('selected_category', '').strip()  # Get selected category
+    selected_category = request.POST.get('selected_category', '').strip()
     save_path = os.path.join(settings.MEDIA_ROOT, 'uploads', uploaded_file.name)
-    
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)  # Ensure folder exists
     with open(save_path, 'wb') as f:
@@ -100,9 +46,7 @@ def upload_and_classify_pdf(request):
     logger.info(f"File saved at: {save_path}")
 
     try:
-        # poppler_path = r'C:\\MY SOTF\\poppler-24.08.0\\Library\\bin'
         images = convert_from_path(save_path, poppler_path="/usr/bin/")[:3]
-        # images = convert_from_path(save_path)[:3]
         extracted_text = ""
 
         for i, image in enumerate(images):
@@ -117,29 +61,34 @@ def upload_and_classify_pdf(request):
             except Exception as ocr_error:
                 logger.error(f"OCR error on page {i+1}: {ocr_error}")
 
-        extracted_category = classify_text_with_openai(extracted_text)
+        # Classify the extracted text based on the selected method
+        if selected_method == 'Openai':
+            extracted_category = classify_text_with_openai(extracted_text)
+        elif selected_method == 'Mistral:latest':
+            extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
+        elif selected_method == 'Llama2':
+            extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
+        elif selected_method == 'Llama3':
+            extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
+        else:
+            extracted_category = "NA"  # Default value if no method is selected
+            logger.warning(f"Unknown method selected: {selected_method}")
 
-        # Store the file info in the PostgreSQL database
-        # UploadedFile.objects.create(
-        #     file_name=uploaded_file.name,
-        #     category=extracted_category
-        # )
+        logger.info(f"Extracted category: {extracted_category}")
 
         # Compare extracted category with user-selected category
         category_match = extracted_category == selected_category
-
+        print('extracted category is:', extracted_category)
 
         # Delete file after processing
         os.remove(save_path)
         logger.info(f"Deleted file: {save_path}")
 
-        # Return the category as response
         return JsonResponse({
             "category": extracted_category,
             "match": category_match
         }, status=200)
 
-    
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         return JsonResponse({"error": f"Unexpected error: {str(e)}"}, status=500)

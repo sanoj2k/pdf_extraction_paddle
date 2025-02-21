@@ -92,21 +92,47 @@ def classify_text_with_mistral_latest(text, selected_method):
     try:
         # Prepare the prompt for Llama2 
         prompt = f"""
-        The following text is extracted from a document. Identify the category from the predefined categories: {', '.join(CATEGORIES)}.
-        If none of the categories apply, return 'NA'.
-        When responding, always standardize the category name to the exact form in the predefined categories list, e.g., return 'Teilungserklarung' instead of 'Teilungserklärung'.
+        The following text is extracted from a document. Identify the category from the predefined categories:  
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
 
-        Text: {text[:1000]}  # Limiting to first 1000 characters
+        If none of the categories apply, return "NA".  
 
-        Response format: Only return the category name, nothing else. If there is no exact match, return 'NA'.
+        ### Category Selection Rules:  
+        1. **Exact Match Priority**:  
+        - If the document explicitly contains a term that directly matches one of the predefined categories (e.g., "Grundbuchauszug" or "Energieausweis"), return that category **immediately**, without considering the document’s context.  
+
+        2. **Contextual Classification (Only if No Exact Match Found):**  
+        - **Exposé** → A **real estate listing**.  
+            - If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary) along with energy efficiency details, classify it as **"Exposé"**.  
+            - If the document **only contains energy efficiency details and consumption ratings**, classify it as **"Energieausweis"**, not "Exposé".  
+
+        - **Grundriss** (Floor Plan) vs. **Baubeschreibung** (Construction Description):  
+            - If the text contains **"floor plan", "site plan", "overview", "room layout"**, classify it as **"Grundriss"**.  
+            - If the text contains **"construction description", "structural work", "foundations", "roof", "construction", "materials"**, classify it as **"Baubeschreibung"**.  
+            - If both terms exist, prioritize **"Baubeschreibung"** if it contains detailed construction elements.  
+
+        - **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
+        - **Kaufvertragsentwurf** → A **real estate contract** (mentions "Kaufvertrag", notary, buyer/seller).  
+
+        3. **Identity Documents Rule:**  
+        - **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document.**  
+        - **DO NOT infer these categories based on names, dates, or legal mentions alone.**  
+
+        4. **Standardization:**  
+        - Always return the category name in the exact predefined form (e.g., **"Teilungserklarung" instead of "Teilungserklärung"**).  
+
+        **Text (in German):** {text[:1500]}  
+
+        **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
         """
+
         
         if selected_method == 'Mistral:latest':
             model = 'mistral:latest'
         elif selected_method == 'Llama2':
             model = 'llama2:latest'
-        elif selected_method == 'Llama3':
-            model = 'llama3.2:latest'
+        elif selected_method == 'Llama3:8b':
+            model = 'llama3:8b'
         else:
             model = 'Mistral:latest'
 

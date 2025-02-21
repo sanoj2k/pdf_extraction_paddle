@@ -1,0 +1,118 @@
+1.
+prompt = f"""
+        The following text is extracted from a document. Identify the category from the predefined categories: Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+        If none of the categories apply, return "NA".  
+
+        ### Category Definitions (for common misclassifications):  
+        - **Most priority** -If the doucment contains any of the categories which exactly matches the predefined categories, return the category name, no need to go the context of the document**
+        - **Exposé**: A real estate listing that describes a property, including price, location, amenities, and features. It often includes descriptive text about the house, surrounding area, and selling points.  
+        - **Grundriss**: A floor plan showing architectural layouts, rooms, and measurements. It mainly consists of structural details and diagrams rather than descriptive text.  
+        - **Teilungserklarung**: A declaration document related to dividing property ownership, often used in legal and real estate contexts.  
+        - **Kaufvertragsentwurf: A legal document related to real estate transactions, including purchase contracts, notarization, and agreements between buyer and seller. If the text mentions a property sale, a notary, and legal terms like "Kaufvertrag", classify it here.
+        - 
+        ### Instructions:  
+        1. **If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary), classify it as "Exposé".**  
+        2. **If the document mainly contains diagrams or structured dimensions of rooms, classify it as "Grundriss".**  
+        3. **If the document relates to property division agreements, classify it as "Teilungserklarung".**  
+        4. **If the text does not fit any category, return "NA".**  
+        5. **If the document is a legal agreement regarding property transactions, classify it as "Kaufvertragsentwurf".**
+        6. **When responding, always standardize the category name to the exact form in the predefined categories list, e.g., return 'Teilungserklarung' instead of 'Teilungserklärung'.**
+
+
+        **Text (in German):** {text[:1000]}  
+
+        **Response format: Only return the category name, nothing else. If there is no exact match, return "NA".**  
+
+        """
+
+2.
+prompt = f"""
+        The following text is extracted from a document. Identify the category from the predefined categories:  
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+
+        If none of the categories apply, return "NA".  
+
+        ### Category Selection Rules:  
+        1. **Exact Match Priority**:  
+        - If the document explicitly contains a term that directly matches one of the predefined categories (e.g., "Grundbuchauszug" or "Energieausweis"), return that category **immediately**, without considering the document’s context.  
+
+        2. **Contextual Classification (Only if No Exact Match Found):**  
+        - **Exposé** → A **real estate listing** describing property price, location, amenities, and features.  
+        - **Grundriss** → A **floor plan** with architectural layouts, measurements, and diagrams.  
+        - **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
+        - **Kaufvertragsentwurf** → A **real estate contract** (mentions "Kaufvertrag", notary, buyer/seller).  
+
+        3. **Identity Documents Rule:**  
+        - **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document.**  
+        - **DO NOT infer these categories based on names, dates, or legal mentions alone.**  
+
+        4. **Standardization:**  
+        - Always return the category name in the exact predefined form (e.g.,  **"Teilungserklarung" instead of "Teilungserklärung"**).  
+
+        **Text (in German):** {text[:1000]}  
+
+        **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+
+
+3. giving better result for aristel, Kaufvertra, expose, Energieausweis
+prompt = f"""
+        The following text is extracted from a document. Identify the category from the predefined categories:  
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+
+        If none of the categories apply, return "NA".  
+
+        ### Category Selection Rules:  
+        1. **Exact Match Priority**:  
+        - If the document explicitly contains a term that directly matches one of the predefined categories (e.g., "Grundbuchauszug" or "Energieausweis"), return that category **immediately**, without considering the document’s context.  
+
+        2. **Contextual Classification (Only if No Exact Match Found):**  
+        - **Exposé** → A **real estate listing** If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary) along with energy efficiency details, it should still be classified as 'Exposé' unless the sole focus is energy consumption and ratings."
+        - **Grundriss** → A **floor plan** with architectural layouts, measurements, and diagrams.  
+        - **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
+        - **Kaufvertragsentwurf** → A **real estate contract** (mentions "Kaufvertrag", notary, buyer/seller).  
+
+        3. **Identity Documents Rule:**  
+        - **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document.**  
+        - **DO NOT infer these categories based on names, dates, or legal mentions alone.**  
+
+        4. **Standardization:**  
+        - Always return the category name in the exact predefined form (e.g.,  **"Teilungserklarung" instead of "Teilungserklärung"**).  
+
+        **Text (in German):** {text[:1000]}  
+
+        **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+4.
+prompt = f"""
+The following text is extracted from a document. Identify the category from the predefined categories:  
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+
+If none of the categories apply, return "NA".  
+
+### Category Selection Rules:  
+1. **Exact Match Priority**:  
+   - If the document explicitly contains a term that directly matches one of the predefined categories (e.g., "Grundbuchauszug" or "Energieausweis"), return that category **immediately**, without considering the document’s context.  
+
+2. **Contextual Classification (Only if No Exact Match Found):**  
+   - **Exposé** → A **real estate listing**.  
+     - If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary) along with energy efficiency details, classify it as **"Exposé"**.  
+     - If the document **only contains energy efficiency details and consumption ratings**, classify it as **"Energieausweis"**, not "Exposé".  
+
+   - **Grundriss** (Floor Plan) vs. **Baubeschreibung** (Construction Description):  
+     - If the text contains **"floor plan", "site plan", "overview", "room layout"**, classify it as **"Grundriss"**.  
+     - If the text contains **"construction description", "structural work", "foundations", "roof", "construction", "materials"**, classify it as **"Baubeschreibung"**.  
+     - If both terms exist, prioritize **"Baubeschreibung"** if it contains detailed construction elements.  
+
+   - **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
+   - **Kaufvertragsentwurf** → A **real estate contract** (mentions "Kaufvertrag", notary, buyer/seller).  
+
+3. **Identity Documents Rule:**  
+   - **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document.**  
+   - **DO NOT infer these categories based on names, dates, or legal mentions alone.**  
+
+4. **Standardization:**  
+   - Always return the category name in the exact predefined form (e.g., **"Teilungserklarung" instead of "Teilungserklärung"**).  
+
+**Text (in German):** {text[:1500]}  
+
+**Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+"""

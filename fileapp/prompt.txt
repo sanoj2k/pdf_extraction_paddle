@@ -81,6 +81,8 @@ prompt = f"""
         **Text (in German):** {text[:1000]}  
 
         **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+"""
+
 4.
 prompt = f"""
 The following text is extracted from a document. Identify the category from the predefined categories:  
@@ -116,3 +118,329 @@ If none of the categories apply, return "NA".
 
 **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
 """
+
+
+5.
+prompt = f"""
+The following text is extracted from a document. Identify the category from the predefined categories:  
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+
+If none of the categories apply, return "NA".  
+
+### Category Selection Rules:  
+1. **Exact Match Priority (With OCR Error Handling):**  
+- If the document explicitly contains a term that directly matches or closely resembles one of the predefined categories (e.g., **"Grundbuchauszug"** or possible OCR errors like **"Grundbucchauszug"**), return that category **immediately** without considering the document’s context.  
+- Consider common OCR variations, such as:  
+    - **"Aufenthantstitel"**, **"AufenthantstiteI"** → **"Aufenthaltstitel"**  
+    - **"Baubeschreihbung"** → **"Baubeschreibung"**  
+    - **"Grundrizz"** → **"Grundriss"**  
+
+2. **Contextual Classification (Only if No Exact Match Found):**  
+- **Exposé** → A **real estate listing**.  
+    - If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary), classify it as **"Exposé"**.  
+    - If the document **only contains energy efficiency details and consumption ratings**, classify it as **"Energieausweis"**, not **"Exposé"**.  
+
+- **Grundriss** (Floor Plan) vs. **Baubeschreibung** (Construction Description):  
+    - If the text contains **"floor plan"**, **"site plan"**, **"overview"**, or **"room layout"**, classify it as **"Grundriss"**.  
+    - If the text contains **"construction description"**, **"structural work"**, **"foundations"**, **"roof"**, **"construction"**, or **"materials"**, classify it as **"Baubeschreibung"**.  
+    - If both terms exist, prioritize **"Baubeschreibung"** if it contains detailed construction elements.  
+
+- **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
+- **Kaufvertragsentwurf** → A **real estate contract** (mentions **"Kaufvertrag"**, notary, buyer/seller).  
+
+3. **Identity Documents Rule:**  
+- **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document, even if OCR errors are present.**  
+- **Do not infer these categories based on names, dates, or legal mentions alone.**  
+
+4. **Standardization:**  
+- Always return the category name in the exact predefined form (e.g., **"Teilungserklarung"** instead of **"Teilungserklärung"**).  
+
+**Text (in German):** {text[:1500]}  
+
+**Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+"""
+
+6.
+prompt = f"""
+The following text is extracted from a document. Identify the category from the predefined categories:
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+If none of the categories apply, return "NA".
+
+Category Selection Rules:
+1. Exact Match Priority (With OCR Error Handling in First 50 Words):
+If the document explicitly contains a term that directly matches or closely resembles one of the predefined categories (e.g., "Grundbuchauszug" or possible OCR errors like "Grundbucchauszug") within the first 50 words, return that category only if the surrounding context supports the classification.
+Consider common OCR variations, such as:
+"Aufenthantstitel", "AufenthantstiteI" → Aufenthaltstitel
+"Baubeschreihbung" → Baubeschreibung
+"Grundrizz" → Grundriss
+2. Contextual Classification (Priority for Exposé):
+Exposé → A real estate listing.
+
+If the document contains property descriptions (e.g., price, amenities, agent contact, nearby locations, or a general property summary), classify it as Exposé even if terms like Grundriss appear elsewhere.
+If the document only contains energy efficiency details and consumption ratings, classify it as Energieausweis, not Exposé.
+Grundriss (Floor Plan) vs. Baubeschreibung (Construction Description):
+
+If the text contains terms like "floor plan", "site plan", "overview", or "room layout", classify it as Grundriss only if it lacks detailed property descriptions.
+If the text contains "construction description", "structural work", "foundations", "roof", "construction", or "materials", classify it as Baubeschreibung.
+If both terms are present, prioritize Baubeschreibung if it contains detailed construction elements.
+Teilungserklarung → A property division agreement in legal/real estate contexts.
+
+Kaufvertragsentwurf → A real estate contract (mentions "Kaufvertrag", notary, buyer/seller).
+
+3. Identity Documents Rule:
+Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms, even if OCR errors are present.
+Do not infer these categories based on names, dates, or legal mentions alone.
+4. Standardization:
+Always return the category name in the exact predefined form (e.g., Teilungserklarung instead of Teilungserklärung).
+Text (in German): {text[:1500]}
+
+Response format: Return only the category name, nothing else. If there is no exact match, return "NA".
+"""
+7...
+
+promt= f"""
+The following text is extracted from a document. Identify the category from the predefined categories:
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+If none of the categories apply, return "NA".
+
+Category Selection Rules:
+1. Exact Match Priority (With OCR Error Handling):
+If the document explicitly contains a term that directly matches or closely resembles one of the predefined categories, return that category immediately without considering the document’s context.
+Handle common OCR variations, including:
+"AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+"Baubeschreihbung" → "Baubeschreibung"
+"Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+2. Contextual Classification (Priority for Exposé):
+Exposé → A real estate listing:
+
+If the document contains property descriptions (e.g., price, amenities, agent contact, nearby locations, or a general property summary), classify it as Exposé even if terms like Grundriss appear elsewhere.
+If the document only contains energy efficiency details and consumption ratings, classify it as Energieausweis, not Exposé.
+Grundriss (Floor Plan) vs. Baubeschreibung (Construction Description):
+
+If the text contains "floor plan", "site plan", "overview", or "room layout", classify it as Grundriss unless detailed property descriptions are present.
+If terms like "construction description", "structural work", "foundations", "roof", "construction", or "materials" are mentioned, classify it as Baubeschreibung.
+If both appear, prioritize Baubeschreibung if it contains detailed construction elements.
+Kaufvertragsentwurf → A real estate contract:
+
+If terms like "Kaufvertrag", "Notar", "Verkäufer", or "Käufer" (buyer/seller) are present, classify it as Kaufvertragsentwurf.
+If both Grundbuchauszug and Kaufvertragsentwurf terms appear:
+Prioritize Kaufvertragsentwurf if the document contains legal clauses or structured contract sections (e.g., "$1 Grundbuchstand" or "§ 2 Kauf").
+Otherwise, classify as Grundbuchauszug if the document primarily lists property ownership and registration details.
+3. Identity Documents Rule:
+Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the document directly mentions these terms (even with OCR errors).
+Do not infer these categories based on personal details like names, dates, or legal mentions alone.
+4. Standardization:
+Always return the category name in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+
+{text[:1500]}  
+Response format: Return only the category name, nothing else. If there is no exact match, return "NA".
+"""
+
+8.
+prompt = f"""
+        The following text is extracted from a document. Identify the category from the predefined categories:
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+        If none of the categories apply, return "NA".
+
+        Category Selection Rules:
+        1. Exact Match Priority (With OCR Error Handling):
+        If the document explicitly contains a term that directly matches or closely resembles one of the predefined categories, return that category immediately without considering the document’s context.
+        Handle common OCR variations, including:
+        "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+        "Baubeschreihbung" → "Baubeschreibung"
+        "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+        "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
+        2. Contextual Classification (Priority for Exposé):
+        Exposé → A real estate listing:
+
+        If the document contains property descriptions (e.g., price, amenities, agent contact, nearby locations, or a general property summary), classify it as Exposé even if terms like Grundriss appear elsewhere.
+        If the document only contains energy efficiency details and consumption ratings, classify it as Energieausweis, not Exposé.
+        Grundriss (Floor Plan) vs. Baubeschreibung (Construction Description):
+
+        If the text contains "floor plan", "site plan", "overview", or "room layout", classify it as Grundriss unless detailed property descriptions are present.
+        If terms like "construction description", "structural work", "foundations", "roof", "construction", or "materials" are mentioned, classify it as Baubeschreibung.
+        If both appear, prioritize Baubeschreibung if it contains detailed construction elements.
+        Kaufvertragsentwurf → A real estate contract:
+
+        If the document contains terms like "Kaufvertrag", "Notar", "Verkäufer", or "Käufer" (buyer/seller), and legal clauses or sections (e.g., "§ 1 Grundbuchstand" or "§ 2 Kauf"), classify it immediately as Kaufvertragsentwurf, even if property details suggest an Exposé.
+        Prioritize Kaufvertragsentwurf if the document contains legal clauses or structured contract sections (e.g., "$1 Grundbuchstand" or "§ 2 Kauf").
+        Otherwise, classify as Grundbuchauszug if the document primarily lists property ownership and registration details.
+        3. Identity Documents Rule:
+        Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these exact terms (even with OCR variations).  
+        Ignore mentions of identification verification (e.g., "ausgewiesen durch") unless these exact terms appear.
+
+        4. Standardization:
+        Always return the category name in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+
+        {text}  
+        Response format: Return only the category name, nothing else. If there is no exact match, return "NA".
+
+        """
+
+9.
+
+prompt = f"""
+The following text is extracted from a document. Identify the category from the predefined categories:
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+If none of the categories apply, return "NA".
+
+Category Selection Rules:
+1. Exact Match Priority (With OCR Error Handling):
+If the document explicitly contains a term that directly matches or closely resembles one of the predefined categories, return that category immediately without considering the document’s context.
+Handle common OCR variations, including (case-insensitive):
+- "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+- "Baubeschreihbung" → "Baubeschreibung"
+- "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+- "ENERGIEAUSWEIS", "ENERGIEAUSWEI5", "ENERGIE AUSWEIS", "EN ERGIEAUSWEIS", "ENERGIEAUSWElS" → "Energieausweis"
+
+2. Contextual Classification (Priority for Exposé):
+- Exposé → A real estate listing:
+If the document contains property descriptions (e.g., price, amenities, agent contact, nearby locations, or a general property summary), classify it as Exposé even if terms like Grundriss appear elsewhere.
+- If the document only contains energy efficiency details and consumption ratings, classify it as Energieausweis, not Exposé.
+
+3. Grundriss (Floor Plan) vs. Baubeschreibung (Construction Description):
+- If the text contains only terms like "floor plan", "site plan", "overview", or "room layout", classify it as Grundriss.
+- If the text contains any construction-related terms such as "construction description", "structural work", "foundations", "roof", "construction", or "materials", classify it as Baubeschreibung, even if floor plan terms are present.
+- If the text contains both Grundriss and Baubeschreibung terms, prioritize Baubeschreibung due to the detailed construction elements.
+- Only classify as Grundriss if construction details are completely absent.
+
+4. Kaufvertragsentwurf → A real estate contract:
+- If the document contains terms like "Kaufvertrag", "Notar", "Verkäufer", or "Käufer" (buyer/seller), and legal clauses or sections (e.g., "§ 1 Grundbuchstand" or "§ 2 Kauf"), classify it immediately as Kaufvertragsentwurf, even if property details suggest an Exposé.
+- Prioritize Kaufvertragsentwurf if the document contains legal clauses or structured contract sections.
+
+5. Identity Documents Rule:
+Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these exact terms (even with OCR variations).
+Ignore mentions of identification verification (e.g., "ausgewiesen durch") unless these exact terms appear.
+
+6. Standardization:
+Always return the category name in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+
+{text[:2000]}
+
+Response format: Return only the category name, nothing else. If there is no exact match, return "NA".
+"""
+
+#
+10.
+The following text is extracted from a document. Identify the category from the predefined categories:
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+If none of the categories apply, return "NA".
+
+### Category Selection Rules:
+
+1. **Exact Match (With OCR Error Handling):**  
+   If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
+   - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+   - "Baubeschreihbung" → "Baubeschreibung"
+   - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+   - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
+
+2. **Contextual Classification:**  
+   - **Exposé:** Prioritize this if the text primarily contains **property descriptions** (price, amenities, agent contact, nearby locations).  
+   - **Baubeschreibung:** Prioritize this if detailed **construction elements** like *Bauweise, Dacheindeckung, Fenster, Heizung, Fußböden* are mentioned extensively.  
+   - If both are present, classify based on **dominant focus**:
+     - **Exposé** if property descriptions dominate.
+     - **Baubeschreibung** if technical construction details dominate.
+
+3. **Grundriss:**  
+   - Classify only if the document focuses mainly on **layout, room distribution, or site plans** without extensive property or construction details.
+
+4. **Identity Documents:**  
+   - Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the exact term (or its OCR variant) explicitly appears.
+
+5. **Standardization:**  
+   - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+
+{text[:1500]}  
+Response format: Return only the category name, nothing else. If no match, return "NA".
+
+11.
+prompt = f"""
+    The following text is extracted from a document. Identify the category from the predefined categories:
+    Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+    If none of the categories apply, return "NA".
+
+    ### Category Selection Rules:
+
+    1. **Exact Match (With OCR Error Handling):**  
+       If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
+       - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+       - "Baubeschreihbung" → "Baubeschreibung"
+       - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+       - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
+
+    2. **Flurkarte (Cadastral Map) Prioritization:**  
+       - If the text includes **land registry or mapping references**, classify it as **Flurkarte** immediately.
+       - **Key terms to trigger Flurkarte classification:**  
+         - `"Flurkarte"`, `"Liegenschaftskataster"`, `"Flurstück"`, `"Geobasisdaten"`, `"Digitale Flurkarte"`, `"Katasteramt"`, `"ALKIS"`
+       - Ignore property descriptions or construction details if the dominant focus is land parcel information.
+
+    3. **Baubeschreibung (Construction Description) Priority:**  
+       - Classify as **Baubeschreibung** if the text contains detailed construction terms like:
+         - `"Bauweise"`, `"Dacheindeckung"`, `"Fenster"`, `"Heizung"`, `"Fußböden"`, `"Rohbau"`, `"Fundamente"`, `"Decke"`, `"Dach"`, `"Wärmedämmung"`, `"Estrich"`
+
+    4. **Grundriss (Floor Plan) Handling:**  
+       - If the text describes **layout, room distribution, or measurements** but lacks construction details, classify it as **Grundriss**.
+
+    5. **Other Documents:**  
+       - Identity documents (Passport, Personalausweis, Lohnsteuerbescheinigung) should only be selected if explicitly mentioned.
+       - Exposé should be chosen if the text focuses on property descriptions, amenities, or real estate marketing.
+
+    6. **Final Decision:**  
+       - Select the **most relevant** category based on the dominant focus.
+       - If no match is found, return `"NA"`.
+
+    {text[:1500]}  
+    Response format: Return only the category name, nothing else. If no match, return "NA".
+"""
+
+12
+
+prompt = f"""
+The following text is extracted from a document. Identify the category from the predefined categories:
+Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+
+If none of the categories apply, return "NA".
+
+### Category Selection Rules:
+
+1. **Exact Match (With OCR Error Handling):**  
+If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
+- "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+- "Baubeschreihbung" → "Baubeschreibung"
+- "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+- "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
+
+2. **Contextual Classification:**
+- **Flurkarte:**  
+Classify as **Flurkarte** if the text contains terms like:
+  - "Flurstück", "Liegenschaftskarte", "Geobasisdaten", "Digitale Flurkarte", "Liegenschaftskataster", or "Maßstab".  
+  - Mentions of **parcels**, **land plots**, **boundary lines**, or any cadastral mapping data.  
+
+- **Exposé:** Prioritize this if the text primarily contains **property descriptions** (price, amenities, agent contact, nearby locations).  
+
+- **Baubeschreibung:**  
+Classify as Baubeschreibung if the text contains construction details like:
+  - "Bauweise", "Dacheindeckung", "Fenster", "Heizung", or "Fußböden".
+  - Or explicitly mentions **"Baubeschreibung"**, **"Rohbau"**, **"Fundamente"**, **"Decke"**, **"Dach"**, **"Wärmedämmung"**, or **"Estrich"**.
+
+- **Grundriss:**  
+Classify as Grundriss if the document focuses on:
+  - **Layout plans**, **room distribution**, or **floor dimensions** without mentioning construction details or cadastral mapping.
+
+3. **Identity Documents:**  
+Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the exact term (or its OCR variant) explicitly appears.
+
+4. **Standardization:**  
+Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+
+{text[:1500]}  
+Response format: Return only the category name, nothing else. If no match, return "NA".
+"""
+   

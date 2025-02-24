@@ -56,7 +56,7 @@ def upload_and_classify_pdf(request):
                 text = "\n".join(
                     [" ".join([word_info[1][0] for word_info in line]) for line in result if line]
                 )
-                extracted_text += sanitize_text(text) + "\n"    
+                extracted_text += sanitize_text(text) + "\n"
             
             except Exception as ocr_error:
                 logger.error(f"OCR error on page {i+1}: {ocr_error}")
@@ -68,7 +68,7 @@ def upload_and_classify_pdf(request):
             extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
         elif selected_method == 'Llama2':
             extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
-        elif selected_method == 'Llama3:8b':
+        elif selected_method == 'llama3:8b':
             extracted_category = classify_text_with_mistral_latest(extracted_text, selected_method)
         else:
             extracted_category = "NA"  # Default value if no method is selected

@@ -92,39 +92,47 @@ def classify_text_with_mistral_latest(text, selected_method):
     try:
         # Prepare the prompt for Llama2 
         prompt = f"""
-        The following text is extracted from a document. Identify the category from the predefined categories:  
-        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+        The following text is extracted from a document. Identify the category from the predefined categories:
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
 
-        If none of the categories apply, return "NA".  
+        If none of the categories apply, return "NA".
 
-        ### Category Selection Rules:  
-        1. **Exact Match Priority**:  
-        - If the document explicitly contains a term that directly matches one of the predefined categories (e.g., "Grundbuchauszug" or "Energieausweis"), return that category **immediately**, without considering the document’s context.  
+        ### Category Selection Rules:
 
-        2. **Contextual Classification (Only if No Exact Match Found):**  
-        - **Exposé** → A **real estate listing**.  
-            - If the document contains property descriptions (e.g., price, amenities, nearby locations, and a general property summary) along with energy efficiency details, classify it as **"Exposé"**.  
-            - If the document **only contains energy efficiency details and consumption ratings**, classify it as **"Energieausweis"**, not "Exposé".  
+        1. **Exact Match (With OCR Error Handling):**  
+        If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
+        - "Baubeschreihbung" → "Baubeschreibung"
+        - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
 
-        - **Grundriss** (Floor Plan) vs. **Baubeschreibung** (Construction Description):  
-            - If the text contains **"floor plan", "site plan", "overview", "room layout"**, classify it as **"Grundriss"**.  
-            - If the text contains **"construction description", "structural work", "foundations", "roof", "construction", "materials"**, classify it as **"Baubeschreibung"**.  
-            - If both terms exist, prioritize **"Baubeschreibung"** if it contains detailed construction elements.  
+        2. **Flurkarte (Cadastral Map) Prioritization:**  
+        - If the text includes **land registry or mapping references**, classify it as **Flurkarte** immediately.
+        - **Key terms to trigger Flurkarte classification:**  
+            - `"Flurkarte"`, `"Liegenschaftskataster"`, `"Flurstück"`, `"Geobasisdaten"`, `"Digitale Flurkarte"`, `"Katasteramt"`, `"ALKIS"`
+        - Ignore property descriptions or construction details if the dominant focus is land parcel information.
 
-        - **Teilungserklarung** → A **property division agreement** in legal/real estate contexts.  
-        - **Kaufvertragsentwurf** → A **real estate contract** (mentions "Kaufvertrag", notary, buyer/seller).  
+        3. **Baubeschreibung (Construction Description) Priority:**  
+        - Classify as **Baubeschreibung** if the text contains detailed construction terms like:
+            - `"Bauweise"`, `"Dacheindeckung"`, `"Fenster"`, `"Heizung"`, `"Fußböden"`, `"Rohbau"`, `"Fundamente"`, `"Decke"`, `"Dach"`, `"Wärmedämmung"`, `"Estrich"`
 
-        3. **Identity Documents Rule:**  
-        - **Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if there is a direct, explicit mention of these terms in the document.**  
-        - **DO NOT infer these categories based on names, dates, or legal mentions alone.**  
+        4. **Grundriss (Floor Plan) Handling:**  
+        - If the text describes **layout, room distribution, or measurements** but lacks construction details, classify it as **Grundriss**.
 
-        4. **Standardization:**  
-        - Always return the category name in the exact predefined form (e.g., **"Teilungserklarung" instead of "Teilungserklärung"**).  
+        5. **Other Documents:**  
+        - Identity documents (Passport, Personalausweis, Lohnsteuerbescheinigung) should only be selected if explicitly mentioned.
+        - Exposé should be chosen if the text focuses on property descriptions, amenities, or real estate marketing.
 
-        **Text (in German):** {text[:1500]}  
+        6. **Final Decision:**  
+        - Select the **most relevant** category based on the dominant focus.
+        - If no match is found, return `"NA"`.
 
-        **Response format: Return only the category name, nothing else. If there is no exact match, return "NA".**  
+        {text[:1500]}  
+        Response format: Return only the category name, nothing else. If no match, return "NA".
         """
+
+        
+
 
         
         if selected_method == 'Mistral:latest':
@@ -154,37 +162,3 @@ def classify_text_with_mistral_latest(text, selected_method):
     except Exception as e:
         logger.error(f"Error in Llama3 classification: {e}")
         return "NA"
-
-# # Function to classify text using Llama2
-# def classify_text_with_llama2_latest(text):
-#     print("ext test is:", text)
-#     try:
-#         # Prepare the prompt for Llama2 
-#         prompt = f"""
-#         The following text is extracted from a document. Identify the category from the predefined categories: {', '.join(CATEGORIES)}.
-#         If none of the categories apply, return 'NA'.
-#         When responding, always standardize the category name to the exact form in the predefined categories list, e.g., return 'Teilungserklarung' instead of 'Teilungserklärung'.
-
-#         Text: {text[:1000]}  # Limiting to first 1000 characters
-
-#         Response format: Only return the category name, nothing else. If there is no exact match, return 'NA'.
-#         """
-        
-        
-#         # Run the Llama2 model using ollama
-#         result = subprocess.run(
-#             ["ollama", "run", "llama2:latest", prompt],
-#             capture_output=True, text=True
-#         )
-
-#         # Capture and process the output from Llama2
-#         if result.returncode == 0:
-#             output = result.stdout.strip()
-#             return output if output in CATEGORIES else "NA"
-#         else:
-#             logger.error(f"Error from Llama3: {result.stderr}")
-#             return "NA"
-
-#     except Exception as e:
-#         logger.error(f"Error in Llama3 classification: {e}")
-#         return "NA"

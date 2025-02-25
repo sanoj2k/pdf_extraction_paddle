@@ -13,28 +13,29 @@
 
 <!-- Container for the upload form -->
 <div class="container mt-5" style="width: 500px;">
-    <h2 class="text-center mb-4">Upload PDF for Classification using Openai</h2>
+    <h2 class="text-center mb-4">Upload PDF for Classification using OpenAI</h2>
 
     <!-- Form for file upload and category selection -->
     <form id="uploadForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
         <div class="mb-3">
             <label for="methodSelect" class="form-label">Select Method</label>
             <select id="methodSelect" class="form-select">
                 <option value="">Choose the method</option>
-                <!-- method will be populated here -->
                 <option value="Openai">Openai</option>
                 <option value="Mistral:latest">Mistral:latest</option>
                 <option value="Llama2">Llama2:latest</option>
                 <option value="llama3:8b">Llama3.8b</option>
-                
                 <option value="Other">Other</option>
             </select>
         </div>
+
         <div class="mb-3">
             <label for="categorySelect" class="form-label">Select Category</label>
             <select id="categorySelect" class="form-select">
                 <option value="">Choose a category</option>
-                <!-- Categories will be populated here -->
                 <option value="Aufenthaltstitel">Aufenthaltstitel</option>
                 <option value="Aufteilungsplan">Aufteilungsplan</option>
                 <option value="Baubeschreibung">Baubeschreibung</option>
@@ -77,35 +78,61 @@
             return;
         }
 
+        // File type validation
+        if (fileInput.files[0].type !== "application/pdf") {
+            Swal.fire("Error", "Only PDF files are allowed.", "error");
+            return;
+        }
+
+        // Check if method is selected
+        if (!methodSelect.value) {
+            Swal.fire("Error", "Please select a method.", "error");
+            return;
+        }
+
         // Check if category is selected
         if (!categorySelect.value) {
             Swal.fire("Error", "Please select a category.", "error");
             return;
         }
 
+        // Prepare form data
         let formData = new FormData();
         formData.append("file", fileInput.files[0]);
         formData.append("selected_category", categorySelect.value);
         formData.append("selected_method", methodSelect.value);
+        formData.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
 
+        // Show loading spinner
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while the file is being processed.",
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send the request
         fetch("{% url 'upload_and_classify_pdf' %}", {
             method: "POST",
             body: formData
         })
         .then(response => response.json())
         .then(data => {
+            Swal.close(); // Close loading spinner
             if (data.category) {
-                Swal.fire("Category Found", `Document Category: ${data.category}`, "success");
-                if (data.match) {
-                    Swal.fire("Category Match", "The extracted category matches your selected category!", "success");
-                } else {
-                    Swal.fire("No Match", "The extracted category does not match your selected category.", "warning");
-                }
+                let message = `Document Category: ${data.category}`;
+                message += data.match
+                    ? "\n The category matches!"
+                    : "\n The category doesn't match.";
+                Swal.fire("Result", message, data.match ? "success" : "warning");
             } else {
                 Swal.fire("No Category Found", "Category could not be determined (NA).", "warning");
             }
         })
         .catch(error => {
+            Swal.close();
             Swal.fire("Error", "File processing failed!", "error");
             console.error("Error:", error);
         });

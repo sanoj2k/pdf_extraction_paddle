@@ -106,26 +106,28 @@ def classify_text_with_mistral_latest(text, selected_method):
         - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
         - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
 
-        2. **Flurkarte (Cadastral Map) Prioritization:**  
-        - If the text includes **land registry or mapping references**, classify it as **Flurkarte** immediately.
-        - **Key terms to trigger Flurkarte classification:**  
-            - `"Flurkarte"`, `"Liegenschaftskataster"`, `"Flurstück"`, `"Geobasisdaten"`, `"Digitale Flurkarte"`, `"Katasteramt"`, `"ALKIS"`
-        - Ignore property descriptions or construction details if the dominant focus is land parcel information.
+        2. **Contextual Classification:**
+        - **Flurkarte:**  
+        Classify as **Flurkarte** if the text contains terms like:
+        - "Flurstück", "Liegenschaftskarte", "Geobasisdaten", "Digitale Flurkarte", "Liegenschaftskataster", or "Maßstab".  
+        - Mentions of **parcels**, **land plots**, **boundary lines**, or any cadastral mapping data.  
 
-        3. **Baubeschreibung (Construction Description) Priority:**  
-        - Classify as **Baubeschreibung** if the text contains detailed construction terms like:
-            - `"Bauweise"`, `"Dacheindeckung"`, `"Fenster"`, `"Heizung"`, `"Fußböden"`, `"Rohbau"`, `"Fundamente"`, `"Decke"`, `"Dach"`, `"Wärmedämmung"`, `"Estrich"`
+        - **Exposé:** Prioritize this if the text primarily contains **property descriptions** (price, amenities, agent contact, nearby locations).  
 
-        4. **Grundriss (Floor Plan) Handling:**  
-        - If the text describes **layout, room distribution, or measurements** but lacks construction details, classify it as **Grundriss**.
+        - **Baubeschreibung:**  
+        Classify as Baubeschreibung if the text contains construction details like:
+        - "Bauweise", "Dacheindeckung", "Fenster", "Heizung", or "Fußböden".
+        - Or explicitly mentions **"Baubeschreibung"**, **"Rohbau"**, **"Fundamente"**, **"Decke"**, **"Dach"**, **"Wärmedämmung"**, or **"Estrich"**.
 
-        5. **Other Documents:**  
-        - Identity documents (Passport, Personalausweis, Lohnsteuerbescheinigung) should only be selected if explicitly mentioned.
-        - Exposé should be chosen if the text focuses on property descriptions, amenities, or real estate marketing.
+        - **Grundriss:**  
+        Classify as Grundriss if the document focuses on:
+        - **Layout plans**, **room distribution**, or **floor dimensions** without mentioning construction details or cadastral mapping.
 
-        6. **Final Decision:**  
-        - Select the **most relevant** category based on the dominant focus.
-        - If no match is found, return `"NA"`.
+        3. **Identity Documents:**  
+        Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the exact term (or its OCR variant) explicitly appears.
+
+        4. **Standardization:**  
+        Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
 
         {text[:1500]}  
         Response format: Return only the category name, nothing else. If no match, return "NA".

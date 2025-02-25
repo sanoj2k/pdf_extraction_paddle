@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body style="background-color: #948db996;">
+
+<!-- Container for the upload form -->
+<div class="container mt-5" style="width: 500px;">
+    <h2 class="text-center mb-4">Upload PDF for Classification</h2>
+
+    <!-- Form for file upload and category selection -->
+    <form id="uploadForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+        <div class="mb-3">
+            <label for="methodSelect" class="form-label">Select Method</label>
+            <select id="methodSelect" class="form-select">
+                <option value="">Choose the method</option>
+                <option value="Openai">Openai</option>
+                <option value="Mistral:latest">Mistral:latest</option>
+                <option value="Llama2">Llama2:latest</option>
+                <option value="llama3:8b">Llama3.8b</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="categorySelect" class="form-label">Select Category</label>
+            <select id="categorySelect" class="form-select">
+                <option value="">Choose a category</option>
+                <option value="Aufenthaltstitel">Aufenthaltstitel</option>
+                <option value="Aufteilungsplan">Aufteilungsplan</option>
+                <option value="Baubeschreibung">Baubeschreibung</option>
+                <option value="Energieausweis">Energieausweis</option>
+                <option value="Exposé">Exposé</option>
+                <option value="Flurkarte">Flurkarte</option>
+                <option value="Grundbuchauszug">Grundbuchauszug</option>
+                <option value="Grundriss">Grundriss</option>
+                <option value="Kaufvertragsentwurf">Kaufvertragsentwurf</option>
+                <option value="Lohnsteuerbescheinigung">Lohnsteuerbescheinigung</option>
+                <option value="Passport">Passport</option>
+                <option value="Payslip">Payslip</option>
+                <option value="Personalausweis">Personalausweis</option>
+                <option value="Teilungserklarung">Teilungserklarung</option>
+                <option value="Wohnflachenberechnung">Wohnflachenberechnung</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="fileInput" class="form-label">Choose a PDF file</label>
+            <input type="file" id="fileInput" class="form-control" accept=".pdf">
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload</button>
+    </form>
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery (needed for certain Bootstrap features) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+    function uploadFile() {
+        let fileInput = document.getElementById("fileInput");
+        let categorySelect = document.getElementById("categorySelect");
+        let methodSelect = document.getElementById("methodSelect");
+
+        // Check if file is selected
+        if (!fileInput.files.length) {
+            Swal.fire("Error", "Please select a file to upload.", "error");
+            return;
+        }
+
+        // File type validation
+        if (fileInput.files[0].type !== "application/pdf") {
+            Swal.fire("Error", "Only PDF files are allowed.", "error");
+            return;
+        }
+
+        // Check if method is selected
+        if (!methodSelect.value) {
+            Swal.fire("Error", "Please select a method.", "error");
+            return;
+        }
+
+        // Check if category is selected
+        if (!categorySelect.value) {
+            Swal.fire("Error", "Please select a category.", "error");
+            return;
+        }
+
+        // Prepare form data
+        let formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("selected_category", categorySelect.value);
+        formData.append("selected_method", methodSelect.value);
+        formData.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        // Show loading spinner
+        Swal.fire({
+            title: "Uploading...",
+            text: "Please wait while the file is being processed.",
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Send the request
+        fetch("{% url 'document_upload' %}", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            Swal.close(); // Close loading spinner
+            if (data.category) {
+                let message = `Document Category: ${data.category}`;
+                message += data.match
+                    ? "\n The category matches!"
+                    : "\n The category doesn't match.";
+                Swal.fire("Result", message, data.match ? "success" : "warning");
+            } else {
+                Swal.fire("No Category Found", "Category could not be determined (NA).", "warning");
+            }
+        })
+        .catch(error => {
+            Swal.close();
+            Swal.fire("Error", "File processing failed!", "error");
+            console.error("Error:", error);
+        });
+    }
+</script>
+
+</body>
+</html>

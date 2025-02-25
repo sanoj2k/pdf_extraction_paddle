@@ -42,8 +42,9 @@ CATEGORIES = [
 
 
 # Function to classify text using Openai
-def classify_text_with_openai(text):
-    print("Prompt:", text)
+def classify_text_with_openai(text, selected_method):
+    print('selected method is', selected_method)
+    print("Text is:", text)
     try:
         prompt = f"""
         The following text is extracted from a document. Identify the category from the predefined categories: {', '.join(CATEGORIES)}.
@@ -141,8 +142,10 @@ def classify_text_with_mistral_latest(text, selected_method):
             model = 'mistral:latest'
         elif selected_method == 'Llama2':
             model = 'llama2:latest'
-        elif selected_method == 'Llama3:8b':
+        elif selected_method == 'llama3:8b':
             model = 'llama3:8b'
+        elif selected_method == 'deepseek-r1:14b':
+            model = 'deepseek-r1:14b'
         else:
             model = 'Mistral:latest'
 

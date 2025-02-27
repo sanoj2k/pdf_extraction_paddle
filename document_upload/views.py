@@ -82,6 +82,7 @@ def document_upload(request):
         if classify_function:
             extracted_category = classify_function(extracted_text, selected_method)
         else:
+            print("not using any method")
             extracted_category = "NA"
             logger.warning(f"Unknown method selected: {selected_method}")
 
@@ -109,5 +110,8 @@ def document_upload(request):
             os.remove(save_path)
             logger.info(f"Deleted file: {save_path}")
 
+
+def model_page(request):
+    return render(request, 'model.html')
 
 

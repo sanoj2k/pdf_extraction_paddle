@@ -28,6 +28,7 @@
                 <option value="Mistral:latest">Mistral:latest</option>
                 <option value="Llama2">Llama2:latest</option>
                 <option value="llama3:8b">Llama3.8b</option>
+                <option value="deepseek-r1:14b">deepseek-r1:14b</option>
                 <option value="Other">Other</option>
             </select>
         </div>
@@ -100,7 +101,7 @@
         // Prepare form data
         let formData = new FormData();
         formData.append("file", fileInput.files[0]);
-        formData.append("selected_category", categorySelect.value);
+        formData.append("in_category", categorySelect.value);
         formData.append("selected_method", methodSelect.value);
         formData.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
 
@@ -122,8 +123,8 @@
         .then(response => response.json())
         .then(data => {
             Swal.close(); // Close loading spinner
-            if (data.category) {
-                let message = `Document Category: ${data.category}`;
+            if (data.out_category) {
+                let message = `Document Category: ${data.out_category}`;
                 message += data.match
                     ? "\n The category matches!"
                     : "\n The category doesn't match.";

@@ -23,5 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('test', include('fileapp.urls')),
     path('', include('document_upload.urls')),
-    # path('home_llama/', include('classify_text_llama2.urls')),
+    path('llama/', include('classify_text_llama2.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

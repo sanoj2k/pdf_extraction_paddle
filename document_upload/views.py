@@ -77,7 +77,7 @@ def document_upload(request):
                 logger.error(f"OCR error on page {i+1}: {ocr_error}")
 
         # Select the classification method dynamically
-       
+        print('extracted text is:', extracted_text)
         classify_function = CLASSIFICATION_METHODS.get(selected_method)
         if classify_function:
             extracted_category = classify_function(extracted_text, selected_method)

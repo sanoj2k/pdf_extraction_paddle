@@ -73,7 +73,7 @@ def upload_and_classify_pdf(request):
                 extracted_text += sanitize_text(text) + "\n"
             except Exception as ocr_error:
                 logger.error(f"OCR error on page {i+1}: {ocr_error}")
-
+        print("ext test is:", extracted_text)
         # Select the classification method dynamically
         classify_function = CLASSIFICATION_METHODS.get(selected_method)
         if classify_function:

@@ -89,54 +89,65 @@ logger = logging.getLogger(__name__)
 # Function to classify text using Llama2
 def classify_text_with_mistral_latest(text, selected_method):
     print('selected method is', selected_method)
-    print("ext test is:", text)
+    # print("ext test is:", text)
     try:
         # Prepare the prompt for Llama2 
         prompt = f"""
-        The following text is extracted from a document. Identify the category from the predefined categories:
-        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
+        The following text is extracted from a document. Identify the category from the predefined categories:  
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
 
-        If none of the categories apply, return "NA".
+        If none of the categories apply, return "NA".  
 
         ### Category Selection Rules:
 
         1. **Exact Match (With OCR Error Handling):**  
-        If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
-        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
-        - "Baubeschreihbung" → "Baubeschreibung"
-        - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
-        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"  
+        - "Baubeschreihbung" → "Baubeschreibung"  
+        - "Grundrizz", "Grunriss" → "Grundriss"  
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"  
 
         2. **Contextual Classification:**
-        - **Flurkarte:**  
-        Classify as **Flurkarte** if the text contains terms like:
-        - "Flurstück", "Liegenschaftskarte", "Geobasisdaten", "Digitale Flurkarte", "Liegenschaftskataster", or "Maßstab".  
-        - Mentions of **parcels**, **land plots**, **boundary lines**, or any cadastral mapping data.  
 
-        - **Exposé:** Prioritize this if the text primarily contains **property descriptions** (price, amenities, agent contact, nearby locations).  
+        - **Kaufvertragsentwurf (Draft Sales Contract)**  
+            Classify as **Kaufvertragsentwurf** if the document contains:  
+            - Legal terms related to **property sales contracts** such as:  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Kaufgegenstand", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
+            - Sections indicating **contractual obligations or notarization**.  
+            - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
 
-        - **Baubeschreibung:**  
-        Classify as Baubeschreibung if the text contains construction details like:
-        - "Bauweise", "Dacheindeckung", "Fenster", "Heizung", or "Fußböden".
-        - Or explicitly mentions **"Baubeschreibung"**, **"Rohbau"**, **"Fundamente"**, **"Decke"**, **"Dach"**, **"Wärmedämmung"**, or **"Estrich"**.
+        - **Exposé (Real Estate Listing/Advertisement)**  
+            Classify as **Exposé** only if the text **primarily describes**:  
+            - **Property listings, marketing materials, or sales advertisements**, containing:  
+            - **"Wohnfläche", "Kaufpreis", "Provision", "Makler", "Lage", "Ausstattung", "Miete", "Energieeffizienz", "hochwertige Ausstattung", "komfortables Wohnen", "zentral eingebundene Lage"**.  
+            - Lifestyle descriptions or **amenities-oriented language**.  
+            - Mentions of **schools, transport, or parks near the property**.  
+        - **Personalausweis**:
+            - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
+            - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
+            - If the text contains **"PERSONALAUSWEIS"** explicitly, classify it as **"Personalausweis"**.
+            - Handle common OCR variations:
+                - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
+            - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
 
-        - **Grundriss:**  
-        Classify as Grundriss if the document focuses on:
-        - **Layout plans**, **room distribution**, or **floor dimensions** without mentioning construction details or cadastral mapping.
+
+        - **Do NOT classify as Exposé if**:  
+            - The document contains **contractual legal language** or mentions **notarization**.  
+            - The text describes **ownership transfer, legal obligations, or official registry details**.  
 
         3. **Identity Documents:**  
-        Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the exact term (or its OCR variant) explicitly appears.
+        - Only classify as **Passport, or Lohnsteuerbescheinigung** if the exact term (or its OCR variant) explicitly appears.  
 
         4. **Standardization:**  
-        Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
+        - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
 
         {text[:1500]}  
-        Response format: Return only the category name, nothing else. If no match, return "NA".
+        Response format: Return only the category name, nothing else. If no match, return "NA".  
         """
 
         
 
-
+        
         
         if selected_method == 'Mistral:latest':
             model = 'mistral:latest'

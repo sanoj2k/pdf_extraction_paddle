@@ -44,7 +44,17 @@ def document_upload(request):
     selected_method = request.POST.get('selected_method', '').strip()
     uploaded_file = request.FILES['file']
     selected_category = request.POST.get('in_category', '').strip()
-    user_details = {}
+    selected_file_id = request.POST.get('file_id', '').strip()
+    # user_details = request.POST.get('user_details', {})
+
+    if len(selected_file_id) > 15:
+        return JsonResponse("file_id length exceeds the maximum limit of 15 characters.")
+    
+    if not re.match(r'^[a-z0-9]+$', selected_file_id):
+        file_id = "Not valid"
+    else:
+        file_id = "Valid"
+    
 
     # Check if the uploaded file is a PDF
     if not uploaded_file.name.lower().endswith('.pdf'):
@@ -90,6 +100,7 @@ def document_upload(request):
 
         # Compare extracted category with user-selected category
         category_match = extracted_category == selected_category
+        # print('selected category is:', selected_category)
         print('extracted category is:', extracted_category)
         category_score = 100
 
@@ -97,7 +108,9 @@ def document_upload(request):
         return JsonResponse({
             "out_category": extracted_category,
             "match": category_match,
-            "category_score": category_score
+            "category_score": category_score,
+            "file_id": file_id
+            # "user_details": user_details
         }, status=200)
 
     except Exception as e:

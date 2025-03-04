@@ -26,12 +26,13 @@ SECRET_KEY = 'django-insecure-etchd7klaj!mot9&-$_3d=pe40#@^4_x-+k$zrh(5i%-^ah26^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['103.66.79.147', '127.0.0.1']
+ALLOWED_HOSTS = ['103.66.79.147', '127.0.0.1','localhost']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -154,3 +156,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # STATICFILES_DIRS = [
 #     os.path.join(BASE_DIR, 'static'),
 # ]
+
+
+CORS_ALLOW_ALL_ORIGINS = True    # for 'corsheaders' package

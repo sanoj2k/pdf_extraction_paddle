@@ -83,7 +83,7 @@ def process_pdfs_and_generate_report(request):
                         except Exception as ocr_error:
                             logger.error(f"Error in OCR processing on page {i+1} of {file_name}: {ocr_error}")
                             continue  # Continue processing other pages
-
+                    print('text is:',text)
                     if not text.strip():
                         logger.warning(f"OCR extracted empty or low-quality text for {file_name}")
                         category = "NA"

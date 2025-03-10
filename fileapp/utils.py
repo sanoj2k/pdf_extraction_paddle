@@ -36,9 +36,34 @@ client = openai.OpenAI(api_key=OPENAI_API_KEY)
 CATEGORIES = [
     "Aufenthaltstitel", "Aufteilungsplan", "Baubeschreibung", "Energieausweis",
     "Exposé", "Flurkarte", "Grundbuchauszug", "Grundriss", "Kaufvertragsentwurf",
-    "Lohnsteuerbescheinigung", "Passport", "payslip", "Personalausweis",
+    "Lohnsteuerbescheinigung", "Passport", "Payslip", "Personalausweis",
     "Teilungserklarung", "Wohnflachenberechnung"
 ]
+
+import unicodedata
+
+def normalize_text(text):
+    """Normalize text by converting umlauts and stripping spaces."""
+    replacements = {
+        "ä": "a", "ö": "o", "ü": "u", "ß": "ss",
+        "Ä": "A", "Ö": "O", "Ü": "U"
+    }
+    for umlaut, replacement in replacements.items():
+        text = text.replace(umlaut, replacement)
+    return text
+
+def clean_category(category):
+    category = category.strip()  # Remove extra spaces and newlines
+    category = normalize_text(category.lower())  # Normalize case and umlauts
+
+    # Standardize variations of "Payslip"
+    if "payslip" in category or "payroll statement" in category:
+        return "Payslip"
+
+    # Normalize categories for exact match
+    normalized_categories = {normalize_text(c.lower()): c for c in CATEGORIES}
+
+    return normalized_categories.get(category, "NA")
 
 
 # Function to classify text using Openai
@@ -111,7 +136,8 @@ def classify_text_with_mistral_latest(text, selected_method):
         - **Kaufvertragsentwurf (Draft Sales Contract)**  
             Classify as **Kaufvertragsentwurf** if the document contains:  
             - Legal terms related to **property sales contracts** such as:  
-            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Kaufgegenstand", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - **Do NOT classify as "Kaufvertragsentwurf" if "Teilungserklärung" appears anywhere in the document, unless it is explicitly stated as a purchase contract.**  
             - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
             - Sections indicating **contractual obligations or notarization**.  
             - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
@@ -129,8 +155,32 @@ def classify_text_with_mistral_latest(text, selected_method):
             - Handle common OCR variations:
                 - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
             - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
+        - **Flurkarte (Cadastral Map)**  
+            Classify as **Flurkarte** if the document contains:  
+            - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
+            - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
+            - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
 
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms** instead of ownership/registry details.  
+                - There are no references to **owners, legal claims, or notarial records**.  
 
+        - **Grundbuchauszug (Land Register Extract)**  
+            Classify as **Grundbuchauszug** only if the document contains:  
+            - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
+            - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
+                - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
+
+        -- **Wohnflächenberechnung (Living Area Calculation Report)**  
+            - Classify as **Wohnflächenberechnung** if the document contains:  
+            - `"Wohnflächenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
+            - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
+            - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
+
+        
         - **Do NOT classify as Exposé if**:  
             - The document contains **contractual legal language** or mentions **notarization**.  
             - The text describes **ownership transfer, legal obligations, or official registry details**.  
@@ -140,9 +190,9 @@ def classify_text_with_mistral_latest(text, selected_method):
 
         4. **Standardization:**  
         - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
-
+        - Return the category in the exact predefined form (e.g., "Wohnflachenberechnung" instead of "Wohnflächenberechnung").  
         {text[:1500]}  
-        Response format: Return only the category name, nothing else. If no match, return "NA".  
+        Response format: Return only the category name, nothing else. If no match, return "NA".    
         """
 
         
@@ -157,6 +207,8 @@ def classify_text_with_mistral_latest(text, selected_method):
             model = 'llama3:8b'
         elif selected_method == 'deepseek-r1:14b':
             model = 'deepseek-r1:14b'
+        elif selected_method == 'qwen2.5':
+            model = 'qwen2.5:14b'
         else:
             model = 'Mistral:latest'
 
@@ -166,11 +218,13 @@ def classify_text_with_mistral_latest(text, selected_method):
             ["ollama", "run", model, prompt],
             capture_output=True, text=True
         )
-
+        # print('result is:', result)
         # Capture and process the output from Llama2
         if result.returncode == 0:
             output = result.stdout.strip()
-            return output if output in CATEGORIES else "NA"
+            print('output is:', output)
+            cleaned_category = clean_category(output) 
+            return cleaned_category if cleaned_category in CATEGORIES else "NA"
         else:
             logger.error(f"Error from Llama3: {result.stderr}")
             return "NA"
@@ -178,3 +232,8 @@ def classify_text_with_mistral_latest(text, selected_method):
     except Exception as e:
         logger.error(f"Error in Llama3 classification: {e}")
         return "NA"
+
+
+
+
+

@@ -32,6 +32,7 @@ CLASSIFICATION_METHODS = {
     'Mistral:latest': classify_text_with_mistral_latest,
     'Llama2': classify_text_with_mistral_latest,
     'llama3:8b': classify_text_with_mistral_latest,
+    'qwen2.5': classify_text_with_mistral_latest,
     'deepseek-r1:14b': classify_text_with_mistral_latest
 }
 

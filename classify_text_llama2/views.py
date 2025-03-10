@@ -88,7 +88,8 @@ def process_pdfs_and_generate_report(request):
                         logger.warning(f"OCR extracted empty or low-quality text for {file_name}")
                         category = "NA"
                     else:
-                        selected_method = 'llama3.8b'
+                        #selected_method = 'llama3.8b'
+                        selected_method = 'qwen2.5'
                         category = classify_text_with_mistral_latest(text, selected_method)
                     
                     results.append({

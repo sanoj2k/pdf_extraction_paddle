@@ -802,3 +802,391 @@ prompt = f"""
 
 ------------------------------------------------
 
+
+
+
+prompt = f"""
+        The following text is extracted from a document. Identify the category from the predefined categories:  
+        **Rules:**
+            - The output **must be exactly one of these categories**:
+            Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklärung, Wohnflächenberechnung.
+            - **Return the exact category name** from the list above. Do not modify, shorten, or approximate the name.
+            - If unsure, return `"NA"`, but do not create new categories.
+
+        ### Category Selection Rules:
+
+        1. **Exact Match (With OCR Error Handling):**  
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"  
+        - "Baubeschreihbung" → "Baubeschreibung"  
+        - "Grundrizz", "Grunriss" → "Grundriss"  
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"  
+
+        2. **Contextual Classification:**
+
+        - **Kaufvertragsentwurf (Draft Sales Contract)**  
+            Classify as **Kaufvertragsentwurf** if the document contains:  
+            - Legal terms related to **property sales contracts** such as:  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - **Do NOT classify as "Kaufvertragsentwurf" if "Teilungserklärung" appears anywhere in the document, unless it is explicitly stated as a purchase contract.**  
+            - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
+            - Sections indicating **contractual obligations or notarization**.  
+            - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
+
+        - **Exposé (Real Estate Listing/Advertisement)**  
+            Classify as **Exposé** only if the text **primarily describes**:  
+            - **Property listings, marketing materials, or sales advertisements**, containing:  
+            - **"Wohnfläche", "Kaufpreis", "Provision", "Makler", "Lage", "Ausstattung", "Miete", "Energieeffizienz", "hochwertige Ausstattung", "komfortables Wohnen", "zentral eingebundene Lage"**.  
+            - Lifestyle descriptions or **amenities-oriented language**.  
+            - Mentions of **schools, transport, or parks near the property**.  
+        - **Personalausweis**:
+            - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
+            - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
+            - If the text contains **"PERSONALAUSWEIS"** explicitly, classify it as **"Personalausweis"**.
+            - Handle common OCR variations:
+                - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
+            - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
+        - **Flurkarte (Cadastral Map)**  
+            Classify as **Flurkarte** if the document contains:  
+            - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
+            - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
+            - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms** instead of ownership/registry details.  
+                - There are no references to **owners, legal claims, or notarial records**.  
+
+        - **Grundbuchauszug (Land Register Extract)**  
+            Classify as **Grundbuchauszug** only if the document contains:  
+            - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
+            - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
+                - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
+
+        -- **Wohnflächenberechnung (Living Area Calculation Report)**  
+            - Classify as **Wohnflächenberechnung** if the document contains:  
+            - `"Wohnflächenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
+            - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
+            - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
+
+        
+        - **Do NOT classify as Exposé if**:  
+            - The document contains **contractual legal language** or mentions **notarization**.  
+            - The text describes **ownership transfer, legal obligations, or official registry details**.  
+
+        3. **Identity Documents:**  
+        - Only classify as **Passport, or Lohnsteuerbescheinigung** if the exact term (or its OCR variant) explicitly appears.  
+
+        4. **Standardization:**  
+        - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
+        - Return the category in the exact predefined form (e.g., "Wohnflachenberechnung" instead of "Wohnflächenberechnung").  
+        - **If the correct category is "Wohnflächenberechnung", but you are about to return "Wohnflache", instead return "Wohnflächenberechnung".**
+        {text[:1500]}  
+        Response format: Return only the category name, nothing else. If no match, return "NA".    
+        """
+
+----------------------------------------------------------------
+not correct
+The following text is extracted from a document. Identify the category from the predefined categories:  
+        **Rules:**
+            - The output **must be exactly one of these categories**:
+            Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, Payslip, Personalausweis, Teilungserklärung, Wohnflächenberechnung.
+            - **Return the exact category name** from the list above. Do not modify, shorten, or approximate the name.
+            - If the document contains **salary breakdowns, tax deductions, or employer-related payment information**, classify it as `"payslip"` instead of `"NA"`.
+            - **Do NOT return `"NA"` if "Lohnabrechnung", "Entgeltabrechnung", "Gehaltsabrechnung", "Brutto/Netto", or "Techniker Krankenkasse" appear. Instead, return `"payslip"`**.
+            - Return only the category name, **nothing else**. If no match, return "NA".
+            
+
+        ### Category Selection Rules:
+
+        1. **Exact Match (With OCR Error Handling):**  
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"  
+        - "Baubeschreihbung" → "Baubeschreibung"  
+        - "Grundrizz", "Grunriss" → "Grundriss"  
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"  
+        - "LOHNABRECHNUNG", "LOHNABRECHUN6", "L0HNABRECHNUNG", "GEHALTSABRECHNUNG", "ENTGELTABRECHNUNG", "GEHALTSABRECHNUN6", "ENTGELTBESCHEINIGUNG", "DATEV-ABRECHNUNG", "BRUTTO/NETTO" → **"payslip"**  
+  
+
+
+        2. **Contextual Classification:**
+
+        ### Payslip (Lohnabrechnung, Entgeltabrechnung, Gehaltsabrechnung)  
+        - **This category includes salary statements, wage slips, or earnings summaries.**  
+        - If the text contains any of these terms, classify it as `"payslip"`:  
+        - **"Entgeltabrechnung"**, **"Gehaltsabrechnung"**, **"Lohnabrechnung"**  
+        - **"Brutto/Netto"**, **"Gesamtbrutto"**, **"Gesamtnetto"**  
+        - **"Steuerklasse"**, **"Sozialversicherung"**, **"Krankenversicherung"**, **"Kirchensteuer"**  
+        - **"Techniker Krankenkasse"**, **"DATEV"**, **"Steuer-ID"**, **"Einkommensteuer"**  
+        - **If the document contains salary breakdowns, net/gross earnings, or tax deductions, classify it as `"payslip"`.**  
+        - **Do not return `"NA"` for such documents.**  
+
+
+        - **Kaufvertragsentwurf (Draft Sales Contract)**  
+            Classify as **Kaufvertragsentwurf** if the document contains:  
+            - Legal terms related to **property sales contracts** such as:  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - **Do NOT classify as "Kaufvertragsentwurf" if "Teilungserklärung" appears anywhere in the document, unless it is explicitly stated as a purchase contract.**  
+            - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
+            - Sections indicating **contractual obligations or notarization**.  
+            - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
+
+        - **Exposé (Real Estate Listing/Advertisement)**  
+            Classify as **Exposé** only if the text **primarily describes**:  
+            - **Property listings, marketing materials, or sales advertisements**, containing:  
+            - **"Wohnfläche", "Kaufpreis", "Provision", "Makler", "Lage", "Ausstattung", "Miete", "Energieeffizienz", "hochwertige Ausstattung", "komfortables Wohnen", "zentral eingebundene Lage"**.  
+            - Lifestyle descriptions or **amenities-oriented language**.  
+            - Mentions of **schools, transport, or parks near the property**.  
+        - **Personalausweis**:
+            - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
+            - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
+            - If the text contains **"PERSONALAUSWEIS"** explicitly, classify it as **"Personalausweis"**.
+            - Handle common OCR variations:
+                - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
+            - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
+        - **Flurkarte (Cadastral Map)**  
+            Classify as **Flurkarte** if the document contains:  
+            - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
+            - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
+            - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms** instead of ownership/registry details.  
+                - There are no references to **owners, legal claims, or notarial records**.  
+
+        - **Grundbuchauszug (Land Register Extract)**  
+            Classify as **Grundbuchauszug** only if the document contains:  
+            - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
+            - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
+                - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
+
+        -- **Wohnflächenberechnung (Living Area Calculation Report)**  
+            - Classify as **Wohnflächenberechnung** if the document contains:  
+            - `"Wohnflächenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
+            - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
+            - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
+
+        
+        - **Do NOT classify as Exposé if**:  
+            - The document contains **contractual legal language** or mentions **notarization**.  
+            - The text describes **ownership transfer, legal obligations, or official registry details**.  
+
+        3. **Identity Documents:**  
+        - Only classify as **Passport, or Lohnsteuerbescheinigung** if the exact term (or its OCR variant) explicitly appears.  
+
+        4. **Standardization:**  
+        - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
+        - Return the category in the exact predefined form (e.g., "Wohnflachenberechnung" instead of "Wohnflächenberechnung").  
+        - **If the correct category is "Wohnflächenberechnung", but you are about to return "Wohnflache", instead return "Wohnflächenberechnung".**
+        {text[:3000]}  
+        Response format: Return only the category name, **nothing else**. If no match, return "NA".   
+
+
+-----------------------------------------------------------------------------------------
+for payslip, but not finished
+
+You are an expert in document classification. Your task is to analyze the given text and assign the correct category from the following predefined categories:
+
+        1. Aufenthaltstitel  
+        2. Aufteilungsplan  
+        3. Baubeschreibung  
+        4. Energieausweis  
+        5. Exposé  
+        6. Flurkarte  
+        7. Grundbuchauszug  
+        8. Grundriss  
+        9. Kaufvertragsentwurf  
+        10. Lohnsteuerbescheinigung  
+        11. Passport  
+        12. Payslip  
+        13. Personalausweis  
+        14. Teilungserklärung  
+        15. Wohnflächenberechnung  
+
+        ### Category Selection Rules:
+
+        1. **Exact Match (With OCR Error Handling):**  
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"  
+        - "Baubeschreihbung" → "Baubeschreibung"  
+        - "Grundrizz", "Grunriss" → "Grundriss"  
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"  
+
+        2. **Contextual Classification:**
+
+        **Classification Criteria for Each Category:**
+        **Rules for Classification: Payslip & Lohnsteuerbescheinigung**
+            1. **Lohnsteuerbescheinigung** must contain:
+            - The word "Lohnsteuerbescheinigung"
+            - Phrases like "Bescheinigung für das Finanzamt", "Steuerbescheinigung", or "maschinell an die Finanzverwaltung übermittelt"
+            - A summary of yearly tax amounts (e.g., Steuerklasse, Kirchensteuer, Solidaritätszuschlag)
+            - A reference to a complete tax year (e.g., "01.01.-31.12.")
+
+            2. **Payslip** must contain:
+            - The words **"Entgeltabrechnung"**, **"Gehaltsabrechnung"**, **"Abrechnung"**, **"Vergütungsabrechnung"**, or **"Lohnabrechnung"**  
+            - Monthly breakdowns of salary components, including terms like **"Gesamtbrutto"**, **"Netto"**, **"Lohnart"**, **"Abzüge"**, and **"Zahlungen"**  
+            - Bank transfer details related to salary payments (e.g., **"Banküberweisung"**, **"IBAN"**, or **"Betrag"**)  
+            - **No mention of a full-year tax summary (e.g., 01.01.-31.12.)** 
+                ⚠️ **Avoid Common Misclassifications:**  
+                - If a document has **both payroll and tax-related details**, classify based on the **dominant content**.  
+                - If it's mainly **about tax details**, choose `"Lohnsteuerbescheinigung"`.  
+                - If it's mainly **about salary breakdowns and earnings**, choose `"Payslip"`. 
+
+            3. **Kaufvertragsentwurf (Draft Sales Contract)**  
+                Classify as **Kaufvertragsentwurf** if the document contains:  
+                - Legal terms related to **property sales contracts** such as:  
+                - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+                - **Do NOT classify as "Kaufvertragsentwurf" if "Teilungserklärung" appears anywhere in the document, unless it is explicitly stated as a purchase contract.**  
+                - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
+                - Sections indicating **contractual obligations or notarization**.  
+                - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
+
+            4. **Exposé (Real Estate Listing/Advertisement)**  
+                Classify as **Exposé** only if the text **primarily describes**:  
+                - **Property listings, marketing materials, or sales advertisements**, containing:  
+                - **"Wohnfläche", "Kaufpreis", "Provision", "Makler", "Lage", "Ausstattung", "Miete", "Energieeffizienz", "hochwertige Ausstattung", "komfortables Wohnen", "zentral eingebundene Lage"**.  
+                - Lifestyle descriptions or **amenities-oriented language**.  
+                - Mentions of **schools, transport, or parks near the property**.  
+            5. **Personalausweis**:
+                - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
+                - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
+                - If the text contains **"PERSONALAUSWEIS"** explicitly, classify it as **"Personalausweis"**.
+                - Handle common OCR variations:
+                    - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
+                - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
+            6. **Flurkarte (Cadastral Map)**  
+                Classify as **Flurkarte** if the document contains:  
+                - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
+                - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
+                - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
+
+                - **Do NOT classify as "Grundbuchauszug" if:**  
+                    - The document primarily contains **map-related terms** instead of ownership/registry details.  
+                    - There are no references to **owners, legal claims, or notarial records**.  
+
+            7. **Grundbuchauszug (Land Register Extract)**  
+                Classify as **Grundbuchauszug** only if the document contains:  
+                - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
+                - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
+
+                - **Do NOT classify as "Grundbuchauszug" if:**  
+                    - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
+                    - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
+
+            8. **Wohnflächenberechnung (Living Area Calculation Report)**  
+                - Classify as **Wohnflächenberechnung** if the document contains:  
+                - `"Wohnflächenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
+                - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
+                - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
+
+            
+            - **Do NOT classify as Exposé if**:  
+                - The document contains **contractual legal language** or mentions **notarization**.  
+                - The text describes **ownership transfer, legal obligations, or official registry details**.  
+
+        3. **Identity Documents:**  
+        - Only classify as **Passport if the exact term (or its OCR variant) explicitly appears.  
+
+        4. **Standardization:**  
+            - Return **only the most relevant category name** without any additional text. If the text does not match any category, return `"NA"`. 
+
+        **Input Text:**  
+
+        {text[:1500]}  
+        Response format: Return only the category name, nothing else. If no match, return "NA".
+
+
+
+
+-------------------------------------------------------------------------------all the categories are mentioned
+
+The following text is extracted from a document. Identify the category from the predefined categories:  
+        Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.  
+
+        If none of the categories apply, return "NA".  
+
+        ### Category Selection Rules:
+
+        1. **Exact Match (With OCR Error Handling):**  
+        - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"  
+        - "Baubeschreihbung" → "Baubeschreibung"  
+        - "Grundrizz", "Grunriss" → "Grundriss"  
+        - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"  
+
+        2. **Contextual Classification:**
+
+        -**Baubeschreibung**
+            -Classify as Baubeschreibung if the text contains:
+                -"BAUBESCHREIBUNG" explicitly.
+                -Technical construction details, such as:
+                    -"Rohbau," "Fundamente," "Dacheindeckung," "Fenster," "Heizung," "Isolierung," "Estrich," "Wärmedämmung," "Stahlbeton," "Mauerwerk," "Tiefgarage," "Dachstuhl," "Schallschutzziegel," "Bodenbeläge," "Kalksandstein"
+            -Mentions of building materials, structural components, insulation techniques, or engineering details.
+            -If "Baubeschreibung" appears anywhere in the text, classify it as Baubeschreibung immediately.
+        -**Exposé**
+            -Classify as Exposé if the text primarily describes:
+
+                -Property listings or advertisements for real estate.
+                -Key real estate details such as:
+                    -"Wohnfläche," "Kaufpreis," "Provision," "Makler," "Lage," "Ausstattung," "Tiefgarage," "Balkon," "Energieeffizienz," "Miete," "Angebotspreis," "Grundstück"
+                    -Lifestyle descriptions, e.g., "zentral eingebundene Lage," "moderne Architektur," "hochwertige Ausstattung," "komfortables Wohnen"
+                    -Descriptions of nearby schools, transport, parks, or amenities.
+        -**Do NOT classify as Exposé if**:
+            -"BAUBESCHREIBUNG" appears in the text.
+            -The document contains technical construction details (e.g., foundation, insulation, materials).
+            -The focus is on engineering or structural descriptions rather than property marketing.
+
+        - **Kaufvertragsentwurf (Draft Sales Contract)**  
+            Classify as **Kaufvertragsentwurf** if the document contains:  
+            - Legal terms related to **property sales contracts** such as:  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Kaufgegenstand", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
+            - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
+            - Sections indicating **contractual obligations or notarization**.  
+            - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
+
+        - **Flurkarte (Cadastral Map)**  
+            Classify as **Flurkarte** if the document contains:  
+            - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
+            - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
+            - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms** instead of ownership/registry details.  
+                - There are no references to **owners, legal claims, or notarial records**.  
+
+        - **Grundbuchauszug (Land Register Extract)**  
+            Classify as **Grundbuchauszug** only if the document contains:  
+            - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
+            - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
+
+            - **Do NOT classify as "Grundbuchauszug" if:**  
+                - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
+                - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
+
+        - **Wohnflachenberechnung(Living Area Calculation Report)**  
+            - Classify as **Wohnflachenberechnung** if the document contains:  
+            - `"Wohnflachenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
+            - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
+            - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
+
+        - **Personalausweis**:
+            - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
+            - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
+            - If the text contains **"PERSONALAUSWEIS"** explicitly, classify it as **"Personalausweis"**.
+            - Handle common OCR variations:
+                - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
+            - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
+
+        - **Do NOT classify as Exposé if**:  
+            - The document contains **contractual legal language** or mentions **notarization**.  
+            - The text describes **ownership transfer, legal obligations, or official registry details**.  
+
+        3. **Identity Documents:**  
+        - Only classify as **Passport, or Lohnsteuerbescheinigung** if the exact term (or its OCR variant) explicitly appears.  
+
+        4. **Standardization:**  
+        - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
+
+        {text[:1500]}  
+        Response format: Return only the category name, nothing else. If no match, return "NA". 

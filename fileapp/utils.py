@@ -2,9 +2,6 @@
 import openai
 from dotenv import load_dotenv
 import os
-import subprocess
-
-import os
 import re
 import logging
 import numpy as np
@@ -112,7 +109,7 @@ logger = logging.getLogger(__name__)
 
 
 # Function to classify text using Llama2
-def classify_text_with_mistral_latest(text, selected_method):
+def classify_text_with_llm(text, selected_method):
     print('selected method is', selected_method)
     # print("ext test is:", text)
     try:
@@ -136,18 +133,36 @@ def classify_text_with_mistral_latest(text, selected_method):
         - **Kaufvertragsentwurf (Draft Sales Contract)**  
             Classify as **Kaufvertragsentwurf** if the document contains:  
             - Legal terms related to **property sales contracts** such as:  
-            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
-            - **Do NOT classify as "Kaufvertragsentwurf" if "Teilungserklärung" appears anywhere in the document, unless it is explicitly stated as a purchase contract.**  
+            - "Notar", "beurkunde", "Kaufvertrag", "Verkäufer", "Erwerber", "Kaufgegenstand", "Eigentumsübertragung", "Miteigentumsanteil", "Übergang von Nutzen und Lasten", "Kaufpreis", "Verwalterzustimmung erforderlich", "Grundbuchinhalt", "Belastungen", "Wohnungs-/Teileigentumsgrundbuch".  
             - Mentions of **buyers (Käufer) and sellers (Verkäufer)** in a contractual context.  
             - Sections indicating **contractual obligations or notarization**.  
             - If "Kaufvertrag" or "beurkunde" appear, classify as **Kaufvertragsentwurf** immediately.  
 
-        - **Exposé (Real Estate Listing/Advertisement)**  
-            Classify as **Exposé** only if the text **primarily describes**:  
-            - **Property listings, marketing materials, or sales advertisements**, containing:  
-            - **"Wohnfläche", "Kaufpreis", "Provision", "Makler", "Lage", "Ausstattung", "Miete", "Energieeffizienz", "hochwertige Ausstattung", "komfortables Wohnen", "zentral eingebundene Lage"**.  
-            - Lifestyle descriptions or **amenities-oriented language**.  
-            - Mentions of **schools, transport, or parks near the property**.  
+        -**Baubeschreibung**
+            -Classify as Baubeschreibung if the text contains:
+                -"BAUBESCHREIBUNG" explicitly.
+                -Technical construction details, such as:
+                    -"Rohbau," "Fundamente," "Dacheindeckung," "Fenster," "Heizung," "Isolierung," "Estrich," "Wärmedämmung," "Stahlbeton," "Mauerwerk," "Tiefgarage," "Dachstuhl," "Schallschutzziegel," "Bodenbeläge," "Kalksandstein"
+            -Mentions of building materials, structural components, insulation techniques, or engineering details.
+            -If "Baubeschreibung" appears anywhere in the text, classify it as Baubeschreibung immediately.
+        -**Exposé**
+            -Classify as Exposé if the text primarily describes:
+
+                -Property listings or advertisements for real estate.
+                -Key real estate details such as:
+                    -"Wohnfläche," "Kaufpreis," "Provision," "Makler," "Lage," "Ausstattung," "Tiefgarage," "Balkon," "Energieeffizienz," "Miete," "Angebotspreis," "Grundstück"
+                    -Lifestyle descriptions, e.g., "zentral eingebundene Lage," "moderne Architektur," "hochwertige Ausstattung," "komfortables Wohnen"
+                    -Descriptions of nearby schools, transport, parks, or amenities.
+        -**Do NOT classify as Exposé if**:
+            -"BAUBESCHREIBUNG" appears in the text.
+            -The document contains technical construction details (e.g., foundation, insulation, materials).
+            -The focus is on engineering or structural descriptions rather than property marketing.
+
+        - **Flurkarte:**  
+            Classify as **Flurkarte** if the text contains terms like:
+            - "Flurstück", "Liegenschaftskarte", "Geobasisdaten", "Digitale Flurkarte", "Liegenschaftskataster", or "Maßstab".
+            - Mentions of **parcels, land plots, boundary lines**, or **cadastral mapping data**.
+            
         - **Personalausweis**:
             - If "PERSONALAUSWEIS" appears anywhere in the text, classify it as "Personalausweis" immediately.
             - Do NOT classify as "Aufenthaltstitel" if "Personalausweis" is present.
@@ -155,32 +170,8 @@ def classify_text_with_mistral_latest(text, selected_method):
             - Handle common OCR variations:
                 - "PFRSONALAUSWEIS", "PERSONALAUSWELS", "PER5ONALAUSWEI5" → "Personalausweis".
             - If "BUNDESREPUBLIK DEUTSCHLAND" appears together with **"IDENTITY CARD"** or **"CARTED'IDENTITÉ"**, classify as **"Personalausweis"**.
-        - **Flurkarte (Cadastral Map)**  
-            Classify as **Flurkarte** if the document contains:  
-            - **"Katasterkartenwerk", "Flurkarte", "Flurstück", "Flurstock", "Gemarkung", "Vermessungsamt", "Maßstab", "Lageplan", "Grenzen"**.  
-            - Mentions of **land parcels, surveying offices, or boundary descriptions**.  
-            - Scale information such as **"Maßstab 1:"** indicating a mapped representation.  
 
-            - **Do NOT classify as "Grundbuchauszug" if:**  
-                - The document primarily contains **map-related terms** instead of ownership/registry details.  
-                - There are no references to **owners, legal claims, or notarial records**.  
 
-        - **Grundbuchauszug (Land Register Extract)**  
-            Classify as **Grundbuchauszug** only if the document contains:  
-            - **"Grundbuch", "Eigentümer", "Grundbuchblatt", "Flurstücknummer", "Belastungen", "Notarielle Urkunde"**.  
-            - Mentions of **ownership details, mortgages, easements, or legal claims on the property**.  
-
-            - **Do NOT classify as "Grundbuchauszug" if:**  
-                - The document primarily contains **map-related terms (e.g., "Katasterkartenwerk")** without legal registry details.  
-                - It appears to be a **survey map or cadastral reference** rather than an ownership extract.  
-
-        -- **Wohnflächenberechnung (Living Area Calculation Report)**  
-            - Classify as **Wohnflächenberechnung** if the document contains:  
-            - `"Wohnflächenberechnung"`, `"WoFIV"`, `"Gesamte Wohnfläche"`, `"m²"`, `"Raum", "Länge", "Breite", "Höhe"`  
-            - Area calculation tables with values like `"1m", "2m", "Flächen unter 1m", "Plausibilitätskontrolle"`  
-            - **Do NOT classify as "Aufteilungsplan" or "Grundbuchauszug" if the document only contains area measurements without legal ownership details.**
-
-        
         - **Do NOT classify as Exposé if**:  
             - The document contains **contractual legal language** or mentions **notarization**.  
             - The text describes **ownership transfer, legal obligations, or official registry details**.  
@@ -190,14 +181,11 @@ def classify_text_with_mistral_latest(text, selected_method):
 
         4. **Standardization:**  
         - Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").  
-        - Return the category in the exact predefined form (e.g., "Wohnflachenberechnung" instead of "Wohnflächenberechnung").  
+
         {text[:1500]}  
-        Response format: Return only the category name, nothing else. If no match, return "NA".    
+        Response format: Return only the category name, nothing else. If no match, return "NA".  
         """
 
-        
-
-        
         
         if selected_method == 'Mistral:latest':
             model = 'mistral:latest'
@@ -232,8 +220,3 @@ def classify_text_with_mistral_latest(text, selected_method):
     except Exception as e:
         logger.error(f"Error in Llama3 classification: {e}")
         return "NA"
-
-
-
-
-

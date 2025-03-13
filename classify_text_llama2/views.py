@@ -11,13 +11,13 @@ import pandas as pd
 import subprocess
 from django.conf import settings
 from datetime import datetime
-from fileapp.utils import classify_text_with_mistral_latest
+from fileapp.utils import classify_text_with_llm
 
 # Define categories
 CATEGORIES = [
     "Aufenthaltstitel", "Aufteilungsplan", "Baubeschreibung", "Energieausweis",
     "Exposé", "Flurkarte", "Grundbuchauszug", "Grundriss", "Kaufvertragsentwurf",
-    "Lohnsteuerbescheinigung", "Passport", "payslip", "Personalausweis",
+    "Lohnsteuerbescheinigung", "Passport", "Payslip", "Personalausweis",
     "Teilungserklarung", "Wohnflachenberechnung"
 ]
 
@@ -58,7 +58,6 @@ def process_pdfs_and_generate_report(request):
         poppler_path = "/usr/bin/"
         results = []
         errors = []
-
         for root, _, files in os.walk(folder_path):
             for file_name in files:
                 if not file_name.endswith('.pdf'):
@@ -90,8 +89,12 @@ def process_pdfs_and_generate_report(request):
                     else:
                         #selected_method = 'llama3.8b'
                         selected_method = 'qwen2.5'
-                        category = classify_text_with_mistral_latest(text, selected_method)
-                    
+                        category = classify_text_with_llm(text, selected_method)
+                   
+                    print('\n\n--------------------------------')
+                    print('filename is:',file_name)
+                    print('category is:',category)
+                    print('\n------------------------------------')
                     results.append({
                         "Folder Name": relative_folder,
                         "File Name": file_name,
@@ -119,71 +122,6 @@ def process_pdfs_and_generate_report(request):
     except Exception as e:
         return JsonResponse({"error": f"Unexpected error: {str(e)}"}, status=500)
 
-# # Function to classify text using Llama3
-# def classify_text_with_llama_latest(text):
-#     try:
-#         prompt = f"""
-#         The following text is extracted from a document. Identify the category from the predefined categories:
-#         Aufenthaltstitel, Aufteilungsplan, Baubeschreibung, Energieausweis, Exposé, Flurkarte, Grundbuchauszug, Grundriss, Kaufvertragsentwurf, Lohnsteuerbescheinigung, Passport, payslip, Personalausweis, Teilungserklarung, Wohnflachenberechnung.
-
-#         If none of the categories apply, return "NA".
-
-#         ### Category Selection Rules:
-
-#         1. **Exact Match (With OCR Error Handling):**  
-#         If the document explicitly contains a term that matches or closely resembles one of the predefined categories, return that category immediately. Handle common OCR variations:
-#         - "AUFENTHANTSTITEI", "AUFENTHANTSTITEL" → "Aufenthaltstitel"
-#         - "Baubeschreihbung" → "Baubeschreibung"
-#         - "Grundrizz", "Grundrizz", "Grunriss" → "Grundriss"
-#         - "ENERGIEAUSWEI5", "ENERGIE AUSWEIS" → "Energieausweis"
-
-#         2. **Contextual Classification:**
-#         - **Flurkarte:**  
-#         Classify as **Flurkarte** if the text contains terms like:
-#         - "Flurstück", "Liegenschaftskarte", "Geobasisdaten", "Digitale Flurkarte", "Liegenschaftskataster", or "Maßstab".  
-#         - Mentions of **parcels**, **land plots**, **boundary lines**, or any cadastral mapping data.  
-
-#         - **Exposé:** Prioritize this if the text primarily contains **property descriptions** (price, amenities, agent contact, nearby locations).  
-
-#         - **Baubeschreibung:**  
-#         Classify as Baubeschreibung if the text contains construction details like:
-#         - "Bauweise", "Dacheindeckung", "Fenster", "Heizung", or "Fußböden".
-#         - Or explicitly mentions **"Baubeschreibung"**, **"Rohbau"**, **"Fundamente"**, **"Decke"**, **"Dach"**, **"Wärmedämmung"**, or **"Estrich"**.
-
-#         - **Grundriss:**  
-#         Classify as Grundriss if the document focuses on:
-#         - **Layout plans**, **room distribution**, or **floor dimensions** without mentioning construction details or cadastral mapping.
-
-#         3. **Identity Documents:**  
-#         Only classify as Passport, Personalausweis, or Lohnsteuerbescheinigung if the exact term (or its OCR variant) explicitly appears.
-
-#         4. **Standardization:**  
-#         Return the category in the exact predefined form (e.g., "Teilungserklarung" instead of "Teilungserklärung").
-
-#         {text[:1500]}  
-#         Response format: Return only the category name, nothing else. If no match, return "NA".
-#         """
-        
-#         result = subprocess.run(
-#             ["ollama", "run", 'llama3:8b', prompt],
-#             capture_output=True, text=True, timeout=60
-#         )
-        
-#         if result.returncode == 0:
-#             output = result.stdout.strip()
-#             return output if output in CATEGORIES else "NA"
-#         else:
-#             logger.error(f"Error from Llama3: {result.stderr}")
-#             return "NA"
-#     except subprocess.TimeoutExpired:
-#         logger.error("Llama3 classification timed out")
-#         return "NA"
-#     except FileNotFoundError:
-#         logger.error("Ollama is not installed or not running")
-#         return "NA"
-#     except Exception as e:
-#         logger.error(f"Unexpected error in Llama3 classification: {e}")
-#         return "NA"
 
 
 # Function to save results to an Excel file inside the media folder

@@ -9,58 +9,63 @@ from django.views.decorators.csrf import csrf_exempt
 from pdf2image import convert_from_path
 from paddleocr import PaddleOCR
 from dotenv import load_dotenv
-from fileapp.utils import classify_text_with_openai, classify_text_with_mistral_latest
+from fileapp.utils import classify_text_with_openai, classify_text_with_llm
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Initialize PaddleOCR with German language
+# Initialize PaddleOCR for German language with angle classification enabled
 ocr = PaddleOCR(lang='german', use_angle_cls=True)
 
-# Set up logging
+# Set up logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Remove invalid XML characters
+# Function to remove invalid XML characters from text
 def sanitize_text(text):
     pattern = r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]'
     return re.sub(pattern, '', text)
 
-# Classification method dispatcher
+# Dictionary to map classification methods to their respective functions
 CLASSIFICATION_METHODS = {
     'Openai': classify_text_with_openai,
-    'Mistral:latest': classify_text_with_mistral_latest,
-    'Llama2': classify_text_with_mistral_latest,
-    'llama3:8b': classify_text_with_mistral_latest,
-    'qwen2.5': classify_text_with_mistral_latest,
-    'deepseek-r1:14b': classify_text_with_mistral_latest
+    'Mistral:latest': classify_text_with_llm,
+    'Llama2': classify_text_with_llm,
+    'llama3:8b': classify_text_with_llm,
+    'qwen2.5': classify_text_with_llm,
+    'deepseek-r1:14b': classify_text_with_llm
 }
 
-# Process uploaded PDF file
-@csrf_exempt
+# Django view to handle PDF file uploads and process OCR + classification
+@csrf_exempt                # Disable CSRF protection for this endpoint
 def document_upload(request):
+    # Ensure the request is a POST request and contains a file
     if request.method != 'POST' or not request.FILES.get('file'):
         return JsonResponse({"error": "Invalid request or missing file"}, status=400)
 
-    selected_method = request.POST.get('selected_method', '').strip()
-    uploaded_file = request.FILES['file']
-    selected_category = request.POST.get('in_category', '').strip()
-    selected_file_id = request.POST.get('file_id', '').strip()
+    # Extract request parameters
+    selected_method = request.POST.get('selected_method', '').strip()       # Classification method
+    uploaded_file = request.FILES['file']                                   # Uploaded PDF file
+    selected_category = request.POST.get('in_category', '').strip()         # User-selected category
+    selected_file_id = request.POST.get('file_id', '').strip()              # User-selected file ID
     # user_details = request.POST.get('user_details', {})
 
+    # Validate the selected method
     if len(selected_file_id) > 15:
         return JsonResponse("file_id length exceeds the maximum limit of 15 characters.")
     
+    # Validate file_id format (only lowercase letters and numbers allowed)
     if not re.match(r'^[a-z0-9]+$', selected_file_id):
-        file_id = "Not valid"
+        file_id = "Not valid"                           # Default file_id
     else:
-        file_id = "Valid"
+        file_id = selected_file_id                      # Valid and return User-selected file ID
     
 
-    # Check if the uploaded file is a PDF
+    # Ensure uploaded file is a PDF
     if not uploaded_file.name.lower().endswith('.pdf'):
         return JsonResponse({"error": "Only PDF files are allowed."}, status=400)
 
+     # Define file save path
     save_path = os.path.join(settings.MEDIA_ROOT, 'uploads', uploaded_file.name)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -105,7 +110,7 @@ def document_upload(request):
         print('extracted category is:', extracted_category)
         category_score = 100
 
-
+        extracted_category = extracted_category.upper()             # Convert extracted category to uppercase
         return JsonResponse({
             "out_category": extracted_category,
             "match": category_match,
